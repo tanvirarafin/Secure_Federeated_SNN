@@ -1,0 +1,12 @@
+# Ignore following folders
+_old/
+results/
+results_distributed/
+local/
+# Ignore following files
+*.h5
+*.hdf5
+*.mat
+*.csv
+*.sh___jb_old___
+*.sh___jb_tmp___
