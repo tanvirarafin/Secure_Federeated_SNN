@@ -72,7 +72,7 @@ class SNNetwork(torch.nn.Module):
         # Sanity checks
         assert self.n_learnable_neurons == topology.shape[0], 'The topology of the network should be of shape [n_learnable_neurons, n_neurons]'
         assert self.n_neurons == topology.shape[-1], 'The topology of the network should be of shape [n_learnable_neurons, n_neurons]'
-        topology[[i for i in range(self.n_learnable_neurons)], [i for i in self.learnable_neurons]] = 0
+        topology[[i for i in range(self.n_learnable_neurons)], self.learnable_neurons] = 0
 
 
         ### Feedforward weights
