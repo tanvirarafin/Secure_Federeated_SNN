@@ -92,8 +92,6 @@ class SNNetwork(torch.nn.Module):
         # Creating the feedback weights.
         # Feedback weights are a tensor of size [n_neurons, n_basis_feedback],
         # for which learnable elements are initialized as ~ Unif[-weights_magnitude, +weights_magnitude],
-        self.feedback_mask = torch.zeros([self.n_neurons, self.n_basis_feedback])
-        self.feedback_mask[self.learnable_neurons, :] = 1
         self.feedback_weights = weights_magnitude * (torch.rand([self.n_learnable_neurons, self.n_basis_feedback]) * 2 - 1)
         self.feedback_filter = feedback_filter(tau_fb, self.n_basis_feedback, mu)
         self.tau_fb = tau_fb
