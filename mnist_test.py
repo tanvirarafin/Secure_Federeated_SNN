@@ -30,18 +30,7 @@ training_data = torch.cat((input_train, output_train), dim=1)
 ### Network parameters
 n_input_neurons = input_train.shape[1]
 n_output_neurons = output_train.shape[1]
-n_hidden_neurons = 64
-n_neurons = n_input_neurons + n_output_neurons + n_hidden_neurons
-
-num_basis_feedforward = 8
-num_basis_feedback = 1
-feedforward_filter = filters.raised_cosine_pillow_08
-feedback_filter = filters.raised_cosine_pillow_08
-
-topology = torch.tensor([[1] * n_input_neurons + [0] * n_hidden_neurons + [1] * n_output_neurons] * n_hidden_neurons +
-                        [[1] * n_input_neurons + [1] * n_hidden_neurons + [0] * n_output_neurons] * n_output_neurons)
-topology[-2, -1] = 1
-topology[-1, -2] = 1
+n_hidden_neurons_ = [2, 4, 8, 16, 32, 64]
 
 
 ### Learning parameters
@@ -51,7 +40,7 @@ eta = 0.5  # balancedness of the dataset
 epochs_test = 200
 kappa = 0.2  # learning signal and eligibility trace averaging factor
 deltas = 5  # local updates period
-r = 0.3  # Desired hidden neurons spiking rate
+r = 0.5  # Desired hidden neurons spiking rate
 alpha = 1  # learning signal regularization coefficient
 mu = 1.5  # compression factor for the raised cosine basis
 num_ite = 5  # number of iterations
@@ -65,29 +54,50 @@ n_main_class = math.floor(epochs * eta)
 n_secondary_class = epochs - n_main_class
 
 ### Randomly select training samples
-indices = np.hstack((np.random.choice(indices_0, [n_main_class], replace=False), np.random.choice(indices_1, [n_secondary_class], replace=False)))
-np.random.shuffle(indices)
+num_ite = 10
 
-training_sequence = training_data[indices, :, :]
-S_prime = training_sequence.shape[-1]
-S = epochs * S_prime
-
+test_accs = [[] for _ in range(len(n_hidden_neurons_))]
 
 ### Run training
-# Create the network
-network = SNNetwork(n_input_neurons, n_hidden_neurons, n_output_neurons, topology,
-                    n_basis_feedforward=num_basis_feedforward, feedforward_filter=feedforward_filter,
-                    n_basis_feedback=num_basis_feedback, feedback_filter=feedback_filter,
-                    tau_ff=10, tau_fb=10, mu=mu, weights_magnitude=0.01)
+for i, n_hidden_neurons in enumerate(n_hidden_neurons_):
+    print("Nh: %d" % n_hidden_neurons)
+    n_neurons = n_input_neurons + n_output_neurons + n_hidden_neurons
 
-# Train it
-train(network, training_sequence, learning_rate, kappa, deltas, r, alpha)
-print('Number of samples trained on: %d, time: %f' % (epochs, time.time() - t0))
+    num_basis_feedforward = 8
+    num_basis_feedback = 1
+    feedforward_filter = filters.raised_cosine_pillow_08
+    feedback_filter = filters.raised_cosine_pillow_08
+
+    topology = torch.tensor([[1] * n_input_neurons + [0] * n_hidden_neurons + [1] * n_output_neurons] * n_hidden_neurons +
+                            [[1] * n_input_neurons + [1] * n_hidden_neurons + [0] * n_output_neurons] * n_output_neurons)
+    topology[-2, -1] = 1
+    topology[-1, -2] = 1
+
+    for _ in range(num_ite):
+        indices = np.hstack((np.random.choice(indices_0, [n_main_class], replace=False), np.random.choice(indices_1, [n_secondary_class], replace=False)))
+        np.random.shuffle(indices)
+
+        training_sequence = training_data[indices, :, :]
+        S_prime = training_sequence.shape[-1]
+        S = epochs * S_prime
+
+        # Create the network
+        network = SNNetwork(n_input_neurons, n_hidden_neurons, n_output_neurons, topology,
+                            n_basis_feedforward=num_basis_feedforward, feedforward_filter=feedforward_filter,
+                            n_basis_feedback=num_basis_feedback, feedback_filter=feedback_filter,
+                            tau_ff=10, tau_fb=10, mu=mu, weights_magnitude=0.01)
+
+        # Train it
+        train(network, training_sequence, learning_rate, kappa, deltas, r, alpha)
+        print('Number of samples trained on: %d, time: %f' % (epochs, time.time() - t0))
 
 
-### Test accuracy
-# The last 100 samples of each class are kept for test
-test_indices = np.hstack((np.arange(900, 1000)[:epochs_test], np.arange(1900, 2000)[:epochs_test]))
+        ### Test accuracy
+        # The last 100 samples of each class are kept for test
+        test_indices = np.hstack((np.arange(900, 1000)[:epochs_test], np.arange(1900, 2000)[:epochs_test]))
+        acc, loss = get_acc_and_loss(network, dataset, test_indices)
 
-acc, loss = get_acc_and_loss(network, dataset, test_indices)
-print('Final test accuracy: %f' % acc)
+        test_accs[i].append(acc)
+        print('Final test accuracy: %f' % acc)
+
+np.save(r'C:/Users/K1804053/PycharmProjects/FL-SNN/results/proba_ls.npy', test_accs)

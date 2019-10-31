@@ -12,12 +12,19 @@ def feedforward_sampling(network, training_sequence, et, ls, s, S_prime, alpha, 
     # Run forward pass
     log_proba = network(training_sequence[int(s / S_prime), :, s % S_prime])
 
-    # Accumulate learning signal
-    ls += torch.sum(log_proba[network.output_neurons - network.n_non_learnable_neurons]) / network.n_learnable_neurons \
-          - alpha*torch.sum(network.spiking_history[network.hidden_neurons, -1]
-          * torch.log(1e-07 + torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons]) / r)
-          + (1 - network.spiking_history[network.hidden_neurons, -1])
-          * torch.log(1e-07 + (1. - torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons])) / (1 - r))) / network.n_learnable_neurons
+    # Accumulate learning signal todo change back
+    # ls += torch.sum(log_proba[network.output_neurons - network.n_non_learnable_neurons]) / network.n_learnable_neurons
+          # - alpha*torch.sum(network.spiking_history[network.hidden_neurons, -1]
+          # * torch.log(1e-07 + torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons]) / r)
+          # + (1 - network.spiking_history[network.hidden_neurons, -1])
+          # * torch.log(1e-07 + (1. - torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons])) / (1 - r))) / network.n_learnable_neurons
+
+    ls += torch.sum(torch.prod(torch.exp(log_proba[network.output_neurons - network.n_non_learnable_neurons]))) / network.n_learnable_neurons
+    #       - alpha*torch.sum(network.spiking_history[network.hidden_neurons, -1]
+    #       * torch.log(1e-07 + torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons]) / r)
+    #       + (1 - network.spiking_history[network.hidden_neurons, -1])
+    #       * torch.log(1e-07 + (1. - torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons])) / (1 - r))) / network.n_learnable_neurons
+
 
     # Accumulate eligibility trace
     for parameter in et:
@@ -123,6 +130,6 @@ def train(network, training_sequence, learning_rate, kappa, deltas, r, alpha):
         learning_signal, ls_temp, eligibility_trace, et_temp \
             = local_feedback_and_update(network, eligibility_trace, learning_signal, et_temp, ls_temp, learning_rate, kappa, s, deltas)
 
-        if s % int(S / 20) == 0:
+        if s % int(S / 5) == 0:
             print('Step %d out of %d' % (s, S))
 

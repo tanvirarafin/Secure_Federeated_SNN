@@ -13,7 +13,6 @@ Preprocess the .aedat file and save the dataset as an .hdf5 file
 
 
 path = r'path/to/mnist-dvs-processed'
-path = r'C:\Users\K1804053\Desktop\PhD\Federated SNN\processed'
 
 dirs = [r'/' + dir_ for dir_ in os.listdir(path)]
 allFiles = {key: [] for key in dirs}
