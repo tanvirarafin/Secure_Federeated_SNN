@@ -68,10 +68,10 @@ for i, n_hidden_neurons in enumerate(n_hidden_neurons_):
     feedforward_filter = filters.raised_cosine_pillow_08
     feedback_filter = filters.raised_cosine_pillow_08
 
-    topology = torch.tensor([[1] * n_input_neurons + [0] * n_hidden_neurons + [1] * n_output_neurons] * n_hidden_neurons +
+    topology = torch.tensor([[1] * n_input_neurons + [1] * n_hidden_neurons + [1] * n_output_neurons] * n_hidden_neurons +
                             [[1] * n_input_neurons + [1] * n_hidden_neurons + [1] * n_output_neurons] * n_output_neurons)
-    topology[-2, -2] = 0
-    topology[-1, -1] = 0
+
+    topology[[i for i in range(n_hidden_neurons + n_output_neurons)], [i + n_input_neurons for i in range(n_hidden_neurons + n_output_neurons)]] = 0
 
     for _ in range(num_ite):
         indices = np.hstack((np.random.choice(indices_0, [n_main_class], replace=False), np.random.choice(indices_1, [n_secondary_class], replace=False)))
