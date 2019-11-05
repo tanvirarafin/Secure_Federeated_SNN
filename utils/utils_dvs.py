@@ -4,12 +4,10 @@ import struct
 
 
 def load_dvs(datafile, S_prime, min_pxl_value=48, max_pxl_value=80, window_length=25000):
-    debug = 0
-
     # constants
     aeLen = 8  # 1 AE event takes 8 bytes
     readMode = '>II'  # struct.unpack(), 2x ulong, 4B+4B
-    td = 0.000001  # timestep is 1us
+
     xmask = 0x00fe
     ymask = 0x7f00
     pmask = 0x1
@@ -27,8 +25,7 @@ def load_dvs(datafile, S_prime, min_pxl_value=48, max_pxl_value=80, window_lengt
         p += len(lt)
         k += 1
         lt = aerdatafh.readline()
-        if debug >= 2:
-            print(lt, p)
+
         continue
 
     # variables to parse
@@ -47,7 +44,6 @@ def load_dvs(datafile, S_prime, min_pxl_value=48, max_pxl_value=80, window_lengt
         # parse event's data
         x_addr = 128 - 1 - ((xmask & addr) >> 1)
         y_addr = ((ymask & addr) >> 8)
-        a_pol = 1 - 2 * (addr & pmask)
 
         if (x_addr >= min_pxl_value) & (x_addr <= max_pxl_value) & (y_addr >= min_pxl_value) & (y_addr <= max_pxl_value):
             timestamps.append(ts)

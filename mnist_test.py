@@ -54,7 +54,7 @@ n_main_class = math.floor(epochs * eta)
 n_secondary_class = epochs - n_main_class
 
 ### Randomly select training samples
-num_ite = 10
+num_ite = 20
 
 test_accs = [[] for _ in range(len(n_hidden_neurons_))]
 
@@ -101,3 +101,4 @@ for i, n_hidden_neurons in enumerate(n_hidden_neurons_):
         print('Final test accuracy: %f' % acc)
 
 np.save(r'/users/k1804053/FL-SNN-distant/results/test_accs_binary.npy', test_accs)
+
