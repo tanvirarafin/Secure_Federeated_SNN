@@ -17,7 +17,7 @@ t0 = time.time()
 
 ### Load Data DVS
 
-dataset = os.getcwd() + r'\mnist_dvs_25ms_26pxl.hdf5'
+dataset = os.getcwd() + r'/mnist_dvs_25ms_26pxl.hdf5'
 
 # The dataset is of size n_samples * n_visible_neurons * S'
 # The first 1000 samples correspond to label '1', the next 1000 correspond to '7'
@@ -39,7 +39,7 @@ epochs = 200
 eta = 0.5  # balancedness of the dataset
 epochs_test = 200
 kappa = 0.2  # learning signal and eligibility trace averaging factor
-deltas = 5  # local updates period
+deltas = 1  # local updates period
 r = 0.5  # Desired hidden neurons spiking rate
 alpha = 1  # learning signal regularization coefficient
 mu = 1.5  # compression factor for the raised cosine basis
@@ -69,9 +69,9 @@ for i, n_hidden_neurons in enumerate(n_hidden_neurons_):
     feedback_filter = filters.raised_cosine_pillow_08
 
     topology = torch.tensor([[1] * n_input_neurons + [0] * n_hidden_neurons + [1] * n_output_neurons] * n_hidden_neurons +
-                            [[1] * n_input_neurons + [1] * n_hidden_neurons + [0] * n_output_neurons] * n_output_neurons)
-    topology[-2, -1] = 1
-    topology[-1, -2] = 1
+                            [[1] * n_input_neurons + [1] * n_hidden_neurons + [1] * n_output_neurons] * n_output_neurons)
+    topology[-2, -2] = 0
+    topology[-1, -1] = 0
 
     for _ in range(num_ite):
         indices = np.hstack((np.random.choice(indices_0, [n_main_class], replace=False), np.random.choice(indices_1, [n_secondary_class], replace=False)))
@@ -100,4 +100,4 @@ for i, n_hidden_neurons in enumerate(n_hidden_neurons_):
         test_accs[i].append(acc)
         print('Final test accuracy: %f' % acc)
 
-np.save(r'C:/Users/K1804053/PycharmProjects/FL-SNN/results/proba_ls.npy', test_accs)
+np.save(r'/users/k1804053/FL-SNN-distant/results/test_accs_binary.npy', test_accs)

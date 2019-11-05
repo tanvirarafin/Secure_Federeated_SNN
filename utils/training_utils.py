@@ -2,7 +2,7 @@ import torch
 import tables
 
 
-def feedforward_sampling(network, training_sequence, et, ls, s, S_prime, alpha, r):
+def feedforward_sampling(network, training_sequence, et, ls, s, S_prime):
     """"
     Runs a feedforward sampling pass:
     - computes log probabilities
@@ -12,19 +12,8 @@ def feedforward_sampling(network, training_sequence, et, ls, s, S_prime, alpha, 
     # Run forward pass
     log_proba = network(training_sequence[int(s / S_prime), :, s % S_prime])
 
-    # Accumulate learning signal todo change back
-    # ls += torch.sum(log_proba[network.output_neurons - network.n_non_learnable_neurons]) / network.n_learnable_neurons
-          # - alpha*torch.sum(network.spiking_history[network.hidden_neurons, -1]
-          # * torch.log(1e-07 + torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons]) / r)
-          # + (1 - network.spiking_history[network.hidden_neurons, -1])
-          # * torch.log(1e-07 + (1. - torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons])) / (1 - r))) / network.n_learnable_neurons
-
-    ls += torch.sum(torch.prod(torch.exp(log_proba[network.output_neurons - network.n_non_learnable_neurons]))) / network.n_learnable_neurons
-    #       - alpha*torch.sum(network.spiking_history[network.hidden_neurons, -1]
-    #       * torch.log(1e-07 + torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons]) / r)
-    #       + (1 - network.spiking_history[network.hidden_neurons, -1])
-    #       * torch.log(1e-07 + (1. - torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons])) / (1 - r))) / network.n_learnable_neurons
-
+    # Accumulate learning signal
+    ls += torch.sum(log_proba[network.output_neurons - network.n_non_learnable_neurons]) - torch.mean(log_proba[network.output_neurons - network.n_non_learnable_neurons])
 
     # Accumulate eligibility trace
     for parameter in et:
@@ -106,7 +95,7 @@ def train(network, training_sequence, learning_rate, kappa, deltas, r, alpha):
     # Run the first Deltas feedforward sampling steps to initialize the learning signal and eligibility trace
     for s in range(deltas):
         # Feedforward sampling step
-        log_proba, learning_signal, eligibility_trace = feedforward_sampling(network, training_sequence, eligibility_trace, learning_signal, s, S_prime, alpha, r)
+        log_proba, learning_signal, eligibility_trace = feedforward_sampling(network, training_sequence, eligibility_trace, learning_signal, s, S_prime)
 
     # First update
     for parameter in eligibility_trace:
@@ -124,7 +113,7 @@ def train(network, training_sequence, learning_rate, kappa, deltas, r, alpha):
             learning_rate /= 2
 
         # Feedforward sampling step
-        log_proba, ls_temp, et_temp = feedforward_sampling(network, training_sequence, et_temp, ls_temp, s, S_prime, alpha, r)
+        log_proba, ls_temp, et_temp = feedforward_sampling(network, training_sequence, et_temp, ls_temp, s, S_prime)
 
         # Local feedback and update
         learning_signal, ls_temp, eligibility_trace, et_temp \
@@ -132,4 +121,3 @@ def train(network, training_sequence, learning_rate, kappa, deltas, r, alpha):
 
         if s % int(S / 5) == 0:
             print('Step %d out of %d' % (s, S))
-

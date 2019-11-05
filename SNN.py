@@ -253,3 +253,4 @@ class SNNetwork(torch.nn.Module):
         hdf5_file.close()
         return
 
+
