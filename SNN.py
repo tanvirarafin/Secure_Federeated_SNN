@@ -1,6 +1,5 @@
 from __future__ import print_function
 import torch
-from torch.nn.parameter import Parameter
 import numpy as np
 import utils.filters as filters
 import tables

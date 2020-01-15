@@ -21,8 +21,14 @@ def make_mnist_dvs(path_to_data, path_to_hdf5, digits, max_pxl_value, min_pxl_va
     pattern = [1, 0, 0, 0, 0]   # the pattern used as output for the considered digit
 
     hdf5_file = tables.open_file(path_to_hdf5, 'w')
-    data = hdf5_file.create_earray(where=hdf5_file.root, name='data', atom=tables.BoolAtom(), shape=(0, (max_pxl_value - min_pxl_value + 1)**2, S_prime))
-    labels = hdf5_file.create_earray(where=hdf5_file.root, name='label', atom=tables.BoolAtom(), shape=(0, len(digits), S_prime))
+
+    train = hdf5_file.create_group(where=hdf5_file.root, name='train')
+    train_data = hdf5_file.create_earray(where=hdf5_file.root.train, name='data', atom=tables.BoolAtom(), shape=(0, (max_pxl_value - min_pxl_value + 1)**2, S_prime))
+    train_labels = hdf5_file.create_earray(where=hdf5_file.root.train, name='label', atom=tables.BoolAtom(), shape=(0, len(digits), S_prime))
+
+    test = hdf5_file.create_group(where=hdf5_file.root, name='test')
+    test_data = hdf5_file.create_earray(where=hdf5_file.root.test, name='data', atom=tables.BoolAtom(), shape=(0, (max_pxl_value - min_pxl_value + 1)**2, S_prime))
+    test_labels = hdf5_file.create_earray(where=hdf5_file.root.test, name='label', atom=tables.BoolAtom(), shape=(0, len(digits), S_prime))
 
 
     for i, digit in enumerate(digits):
@@ -30,38 +36,25 @@ def make_mnist_dvs(path_to_data, path_to_hdf5, digits, max_pxl_value, min_pxl_va
                 if dir_.find(str(digit)) != -1:
                     for subdir, _, _ in os.walk(path_to_data + dir_):
                         if subdir.find(scale) != -1:
-                            for file in glob.glob(subdir + r'/*.aedat'):
-                                print(digit, file)
-                                data.append(load_dvs(file, S_prime, min_pxl_value=min_pxl_value, max_pxl_value=max_pxl_value, window_length=window_length))
+                            for j, file in enumerate(glob.glob(subdir + r'/*.aedat')):
+                                if j < 0.9*len(glob.glob(subdir + r'/*.aedat')):
+                                    print('train', file)
+                                    train_data.append(load_dvs(file, S_prime, min_pxl_value=min_pxl_value, max_pxl_value=max_pxl_value, window_length=window_length))
 
-                                output_signal = np.array([[[0] * S_prime]*i
-                                                          + [pattern * int(S_prime/len(pattern)) + pattern[:(S_prime % len(pattern))]]
-                                                          + [[0] * S_prime]*(len(digits) - 1 - i)], dtype=bool)
-                                labels.append(output_signal)
+                                    output_signal = np.array([[[0] * S_prime]*i
+                                                              + [pattern * int(S_prime/len(pattern)) + pattern[:(S_prime % len(pattern))]]
+                                                              + [[0] * S_prime]*(len(digits) - 1 - i)], dtype=bool)
+                                    train_labels.append(output_signal)
+                                else:
+                                    print('test', file)
+                                    test_data.append(load_dvs(file, S_prime, min_pxl_value=min_pxl_value, max_pxl_value=max_pxl_value, window_length=window_length))
+
+                                    output_signal = np.array([[[0] * S_prime] * i
+                                                              + [pattern * int(S_prime / len(pattern)) + pattern[:(S_prime % len(pattern))]]
+                                                              + [[0] * S_prime] * (len(digits) - 1 - i)], dtype=bool)
+                                    test_labels.append(output_signal)
+
     hdf5_file.close()
-
-
-
-path_to_data = r'path/to/mnist-dvs-processed'
-path_to_data = r'C:\Users\K1804053\Desktop\PhD\Federated SNN\processed'
-
-# digits to consider
-digits = [1, 7]
-
-# Pixel values to consider
-max_pxl_value = 73
-min_pxl_value = 48
-
-T_max = int(2e6)  # maximum duration of an example in us
-window_length = 25000
-
-scale = 'scale4'
-
-path_to_hdf5 = r'C:/Users/K1804053/PycharmProjects/datasets/mnist-dvs/mnist_dvs_%dms_%dpxl_%d_digits.hdf5' \
-               % (int(window_length / 1000), max_pxl_value - min_pxl_value + 1, len(digits))
-
-
-make_mnist_dvs(path_to_data, path_to_hdf5, digits, max_pxl_value, min_pxl_value, T_max, window_length, scale)
 
 
 def make_shd(path_to_train, path_to_test, path_to_hdf5, digits, window_length):
@@ -78,6 +71,29 @@ def make_shd(path_to_train, path_to_test, path_to_hdf5, digits, window_length):
     train = hdf5_file.create_group(where=hdf5_file.root, name='train')
     data = hdf5_file.create_array(where=hdf5_file.root.train, name='data', atom=tables.BoolAtom(), obj=load_shd(data, S_prime, digits, window_length))
     labels = hdf5_file.create_earray(where=hdf5_file.root.train, name='label', atom=tables.BoolAtom(), shape=(0, len(digits), S_prime))
+
+
+path_to_data = r'path/to/mnist-dvs-processed'
+
+# digits to consider
+digits = [i for i in range(10)]
+
+# Pixel values to consider
+max_pxl_value = 73
+min_pxl_value = 48
+
+T_max = int(2e6)  # maximum duration of an example in us
+window_length = 25000
+
+scale = 'scale4'
+
+path_to_hdf5 = r'path/to/datasets/mnist-dvs/mnist_dvs_%dms_%dpxl_%d_digits.hdf5' \
+               % (int(window_length / 1000), max_pxl_value - min_pxl_value + 1, len(digits))
+
+
+# make_mnist_dvs(path_to_data, path_to_hdf5, digits, max_pxl_value, min_pxl_value, T_max, window_length, scale)
+
+
 
 
 

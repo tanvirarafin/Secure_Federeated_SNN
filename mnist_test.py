@@ -2,105 +2,108 @@ from __future__ import print_function
 import torch
 import os
 from SNN import SNNetwork
-import utils.filters as filters
 from utils.training_utils import train, get_acc_and_loss
 import time
 import numpy as np
 import tables
-import math
+import argparse
+import utils
+import pickle
 
 ''''
-Code snippet to train an SNN on the MNIST dataset.
+Code snippet to train an SNN.
 '''
 
-t0 = time.time()
 
-### Load Data DVS
+if __name__ == "__main__":
+    # setting the hyper parameters
+    parser = argparse.ArgumentParser(description='Train probabilistic multivalued SNNs using Pytorch')
 
-dataset = 'C:/Users/K1804053/PycharmProjects/datasets/mnist-dvs/mnist_dvs_25ms_26pxl_2_digits.hdf5'
+    # Training arguments
+    parser.add_argument('--dataset')
+    parser.add_argument('--num_ite', default=10, type=int, help='Number of times every experiment will be repeated')
+    parser.add_argument('--epochs', default=None, type=int, help='Number of samples to train on for each experiment')
+    parser.add_argument('--epochs_test', default=None, type=int, help='Number of samples to test on')
+    parser.add_argument('--lr', default=0.005, type=float, help='Learning rate')
+    parser.add_argument('--deltas', default=1, type=int)
+    parser.add_argument('--kappa', default=0.2, type=float, help='Learning signal and eligibility trace decay coefficient')
+    parser.add_argument('--alpha', default=1, type=float, help='KL regularization coefficient')
+    parser.add_argument('--r', default=0.3, help='Desired spiking rate of hidden neurons')
+    parser.add_argument('--topology_type', default='fully_connected', choices=['fully_connected', 'feedforward', 'sparse'], help='Desired spiking rate of hidden neurons')
 
-# The dataset is of size n_samples * n_visible_neurons * S'
-# The first 1000 samples correspond to label '1', the next 1000 correspond to '7'
-input_train = torch.FloatTensor(np.vstack((tables.open_file(dataset).root.data[:900], tables.open_file(dataset).root.data[1000:1900])))
-output_train = torch.FloatTensor(np.vstack((tables.open_file(dataset).root.label[:900], tables.open_file(dataset).root.label[1000:1900])))
 
-training_data = torch.cat((input_train, output_train), dim=1)
+    args = parser.parse_args()
+
+
+local_data_path = r'path/to/datasets'
+save_path = os.getcwd() + r'/results'
+
+datasets = {'mnist_dvs_2': r'mnist_dvs_25ms_26pxl_2_digits.hdf5',
+            'mnist_dvs_10': r'mnist_dvs_25ms_26pxl_10_digits.hdf5',
+            }
+
+
+dataset = local_data_path + datasets[args.dataset]
+
+
+input_train = torch.FloatTensor(tables.open_file(dataset).root.train.data[:])
+output_train = torch.FloatTensor(tables.open_file(dataset).root.train.label[:])
+
+input_test = torch.FloatTensor(tables.open_file(dataset).root.test.data[:])
+output_test = torch.FloatTensor(tables.open_file(dataset).root.test.label[:])
 
 
 ### Network parameters
 n_input_neurons = input_train.shape[1]
 n_output_neurons = output_train.shape[1]
-n_hidden_neurons = 64
-
+n_hidden_neurons = 4
 
 ### Learning parameters
-learning_rate = 0.005 / max(1, n_hidden_neurons)
-epochs = 200
-eta = 0.5  # balancedness of the dataset
-epochs_test = 200
-kappa = 0.2  # learning signal and eligibility trace averaging factor
-deltas = 1  # local updates period
-r = 0.3  # Desired hidden neurons spiking rate
-alpha = 1  # learning signal regularization coefficient
-mu = 1.5  # compression factor for the raised cosine basis
-num_ite = 5  # number of iterations
+if args.epochs:
+    epochs = args.epochs
+else:
+    epochs = input_train.shape[0]
+if args.epochs_test:
+    epochs_test = args.epochs_test
+else:
+    epochs_test = input_test.shape[0]
 
+test_accs = []
 
-### Dataset parameters
-n_samples_train_per_class = 900
-indices_0 = np.arange(0, 900)
-indices_1 = np.arange(900, 1800)
-n_main_class = math.floor(epochs * eta)
-n_secondary_class = epochs - n_main_class
+learning_rate = args.lr / n_hidden_neurons
+kappa = args.kappa
+alpha = args.alpha
+deltas = args.deltas
+num_ite = args.num_ite
+r = args.r
 
 ### Randomly select training samples
-num_ite = 20
+indices = np.random.choice(np.arange(input_train.shape[0]), [epochs], replace=True)
 
-# test_accs = [[] for _ in range(len(n_hidden_neurons_))]
+S_prime = input_train.shape[-1]
 
-### Run training
-# for i, n_hidden_neurons in enumerate(n_hidden_neurons_):
-#     print("Nh: %d" % n_hidden_neurons)
-n_neurons = n_input_neurons + n_output_neurons + n_hidden_neurons
-
-num_basis_feedforward = 8
-num_basis_feedback = 1
-feedforward_filter = filters.raised_cosine_pillow_08
-feedback_filter = filters.raised_cosine_pillow_08
-
-topology = torch.tensor([[1] * n_input_neurons + [1] * n_hidden_neurons + [1] * n_output_neurons] * n_hidden_neurons +
-                        [[1] * n_input_neurons + [1] * n_hidden_neurons + [1] * n_output_neurons] * n_output_neurons)
-
-topology[[i for i in range(n_hidden_neurons + n_output_neurons)], [i + n_input_neurons for i in range(n_hidden_neurons + n_output_neurons)]] = 0
-
-    # for _ in range(num_ite):
-# indices = np.hstack((np.random.choice(indices_0, [n_main_class], replace=False), np.random.choice(indices_1, [n_secondary_class], replace=False)))
-indices = np.random.choice(np.arange(len(training_data)), [epochs], replace=False)
-
-training_sequence = training_data[indices, :, :]
-S_prime = training_sequence.shape[-1]
 S = epochs * S_prime
+for _ in range(num_ite):
+    ### Run training
+    # Train it
+    t0 = time.time()
 
-# Create the network
-network = SNNetwork(n_input_neurons, n_hidden_neurons, n_output_neurons, topology,
-                    n_basis_feedforward=num_basis_feedforward, feedforward_filter=feedforward_filter,
-                    n_basis_feedback=num_basis_feedback, feedback_filter=feedback_filter,
-                    tau_ff=10, tau_fb=10, mu=mu, weights_magnitude=0.01)
+    # Create the network
+    network = SNNetwork(**utils.training_utils.make_network_parameters(n_input_neurons, n_output_neurons, n_hidden_neurons, topology_type='fully_connected'))
 
-# Train it
-train(network, training_sequence, learning_rate, kappa, deltas, alpha, r)
-print('Number of samples trained on: %d, time: %f' % (epochs, time.time() - t0))
+    # Train it
+    train(network, input_train, output_train, indices, learning_rate, kappa, deltas, alpha, r)
+    print('Number of samples trained on: %d, time: %f' % (epochs, time.time() - t0))
 
 
-### Test accuracy
-# The last 100 samples of each class are kept for test
-test_indices = np.hstack((np.arange(900, 1000)[:epochs_test], np.arange(1900, 2000)[:epochs_test]))
-np.random.shuffle(test_indices)
+    ### Test accuracy
+    test_indices = np.random.choice(np.arange(input_test.shape[0]), [epochs_test], replace=False)
+    np.random.shuffle(test_indices)
 
-acc, loss = get_acc_and_loss(network, dataset, test_indices)
+    acc, loss = get_acc_and_loss(network, input_test[test_indices], output_test[test_indices])
 
-# test_accs[i].append(acc)
-print('Final test accuracy: %f' % acc)
+    test_accs.append(acc)
+    print('Final test accuracy: %f' % acc)
 
-# np.save(r'/users/k1804053/FL-SNN-distant/results/test_accs_binary.npy', test_accs)
+np.save(save_path + '/acc_' + args.dataset + '_fully_connected' + '.npy', test_accs)
 
