@@ -89,7 +89,7 @@ for _ in range(num_ite):
     t0 = time.time()
 
     # Create the network
-    network = SNNetwork(**utils.training_utils.make_network_parameters(n_input_neurons, n_output_neurons, n_hidden_neurons, topology_type='fully_connected'))
+    network = SNNetwork(**utils.training_utils.make_network_parameters(n_input_neurons, n_output_neurons, n_hidden_neurons, topology_type=args.topology_type))
 
     # Train it
     train(network, input_train, output_train, indices, learning_rate, kappa, deltas, alpha, r)
@@ -105,5 +105,5 @@ for _ in range(num_ite):
     test_accs.append(acc)
     print('Final test accuracy: %f' % acc)
 
-np.save(save_path + '/acc_' + args.dataset + '_fully_connected' + '.npy', test_accs)
+np.save(save_path + '/acc_' + args.dataset + args.topology_type + '.npy', test_accs)
 

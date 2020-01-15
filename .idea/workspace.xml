@@ -36,8 +36,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/mnist_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="414">
-              <caret line="31" column="130" selection-start-line="31" selection-start-column="130" selection-end-line="31" selection-end-column="130" />
+            <state relative-caret-position="771">
+              <caret line="106" lean-forward="true" selection-start-line="106" selection-end-line="106" />
               <folding>
                 <element signature="e#0#37#0" expanded="true" />
               </folding>
@@ -217,18 +217,18 @@
       <option name="presentableId" value="Default" />
       <updated>1571925651982</updated>
       <workItem from="1571925653342" duration="72000" />
-      <workItem from="1577958853768" duration="68619000" />
+      <workItem from="1577958853768" duration="69216000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="98688000" />
+    <option name="totallyTimeSpent" value="99285000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1713" y="0" width="1734" height="1407" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.1786141" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1786141" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -241,7 +241,7 @@
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" />
       <window_info anchor="bottom" id="Database Changes" order="9" />
-      <window_info anchor="bottom" id="Terminal" order="10" visible="true" weight="0.23704867" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="10" visible="true" weight="0.23704867" />
       <window_info anchor="bottom" id="Python Console" order="11" weight="0.32967034" />
       <window_info anchor="bottom" id="Event Log" order="12" sideWeight="0.5006024" side_tool="true" weight="0.14756672" />
       <window_info anchor="bottom" id="File Transfer" order="13" sideWeight="0.49939758" weight="0.14756672" />
@@ -412,8 +412,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/mnist_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="414">
-          <caret line="31" column="130" selection-start-line="31" selection-start-column="130" selection-end-line="31" selection-end-column="130" />
+        <state relative-caret-position="771">
+          <caret line="106" lean-forward="true" selection-start-line="106" selection-end-line="106" />
           <folding>
             <element signature="e#0#37#0" expanded="true" />
           </folding>
