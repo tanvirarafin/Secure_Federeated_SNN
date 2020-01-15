@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parser.add_argument('--kappa', default=0.2, type=float, help='Learning signal and eligibility trace decay coefficient')
     parser.add_argument('--alpha', default=1, type=float, help='KL regularization coefficient')
     parser.add_argument('--r', default=0.3, help='Desired spiking rate of hidden neurons')
-    parser.add_argument('--topology_type', default='fully_connected', choices=['fully_connected', 'feedforward', 'sparse'], help='Desired spiking rate of hidden neurons')
+    parser.add_argument('--topology_type', default='fully_connected', choices=['fully_connected', 'feedforward', 'sparse'], help='')
 
 
     args = parser.parse_args()

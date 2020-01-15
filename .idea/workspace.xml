@@ -2,17 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9a8c40d3-bc53-4dfc-b7bf-e99eb9a2e565" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/FL-SNN.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/FL-SNN.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SNN.py" beforeDir="false" afterPath="$PROJECT_DIR$/SNN.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/benchmark_mnist.sh" beforeDir="false" afterPath="$PROJECT_DIR$/benchmark_mnist.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mnist_10_digits.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/mnist_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/mnist_test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shd_test.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/make_hdf5_dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/make_hdf5_dataset.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/training_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/training_utils.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -46,8 +36,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/mnist_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="584">
-              <caret line="95" column="84" lean-forward="true" selection-start-line="95" selection-start-column="84" selection-end-line="95" selection-end-column="84" />
+            <state relative-caret-position="414">
+              <caret line="31" column="130" selection-start-line="31" selection-start-column="130" selection-end-line="31" selection-end-column="130" />
               <folding>
                 <element signature="e#0#37#0" expanded="true" />
               </folding>
@@ -227,12 +217,12 @@
       <option name="presentableId" value="Default" />
       <updated>1571925651982</updated>
       <workItem from="1571925653342" duration="72000" />
-      <workItem from="1577958853768" duration="68006000" />
+      <workItem from="1577958853768" duration="68619000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="98075000" />
+    <option name="totallyTimeSpent" value="98688000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1713" y="0" width="1734" height="1407" extended-state="0" />
@@ -266,26 +256,6 @@
     <option name="version" value="1" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/mnist_online_distributed_fixed_rate.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="18" lean-forward="true" selection-start-line="18" selection-end-line="18" />
-          <folding>
-            <element signature="e#0#37#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/mnist_online_distributed.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="204">
-          <caret line="12" selection-start-line="12" selection-end-line="12" />
-          <folding>
-            <element signature="e#0#37#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/local/training_manager.sh">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -420,10 +390,30 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/mnist_online_distributed.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="204">
+          <caret line="12" selection-start-line="12" selection-end-line="12" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/mnist_online_distributed_fixed_rate.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="153">
+          <caret line="18" lean-forward="true" selection-start-line="18" selection-end-line="18" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/mnist_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="584">
-          <caret line="95" column="84" lean-forward="true" selection-start-line="95" selection-start-column="84" selection-end-line="95" selection-end-column="84" />
+        <state relative-caret-position="414">
+          <caret line="31" column="130" selection-start-line="31" selection-start-column="130" selection-end-line="31" selection-end-column="130" />
           <folding>
             <element signature="e#0#37#0" expanded="true" />
           </folding>
