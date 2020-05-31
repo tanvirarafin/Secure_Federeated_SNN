@@ -6,14 +6,70 @@ import utils.filters as filters
 import torch.distributed as dist
 import torch.multiprocessing as mp
 import os
-from utils.training_utils import local_feedback_and_update, feedforward_sampling, get_acc_and_loss
-from utils.distributed_utils import init_training, global_update, init_processes
+from utils.training_utils import local_feedback_and_update, feedforward_sampling, get_acc_and_loss, refractory_period
 
+from utils.distributed_utils import init_training, global_update, init_processes
+import tables
 """"
 
 Runs FL-SNN using two devices. 
 
 """
+def get_acc_and_loss(network, dataset, test_indices):
+    input_test = torch.FloatTensor(tables.open_file(dataset).root.test.data[:])
+    output_test = torch.FloatTensor(tables.open_file(dataset).root.test.label[:])
+    input_sequence = input_test[test_indices]
+    output_sequence=output_test[test_indices]
+    network.set_mode('test')
+    network.reset_internal_state()
+
+    S_prime = input_sequence.shape[-1]
+    epochs = input_sequence.shape[0]
+
+    S = S_prime * epochs
+    outputs = torch.zeros([epochs, network.n_output_neurons, S_prime])
+    loss = 0
+
+    rec = torch.zeros([network.n_learnable_neurons, S_prime])
+
+    for s in range(S):
+        if s % S_prime == 0:
+            refractory_period(network)
+
+        log_proba = network(input_sequence[int(s / S_prime), :, s % S_prime])
+        loss += torch.sum(log_proba).numpy()
+        outputs[int(s / S_prime), :, s % S_prime] = network.spiking_history[network.output_neurons, -1]
+        rec[:, s % S_prime] = network.spiking_history[network.learnable_neurons, -1]
+
+    predictions = torch.max(torch.sum(outputs, dim=-1), dim=-1).indices
+    true_classes = torch.max(torch.sum(output_sequence, dim=-1), dim=-1).indices
+    acc = float(torch.sum(predictions == true_classes, dtype=torch.float) / len(predictions))
+    return acc, loss
+
+   
+def feedforward_sampling(network, example, et, ls, s, S_prime, alpha, r):
+    """"
+    Runs a feedforward sampling pass:
+    - computes log probabilities
+    - accumulates learning signal
+    - accumulates eligibility trace
+    """
+    # Run forward pass
+    log_proba = network(example[:, s % S_prime])
+
+    # Accumulate learning signal
+    proba_hidden = torch.sigmoid(network.potential[network.hidden_neurons - network.n_non_learnable_neurons])
+    ls += torch.sum(log_proba[network.output_neurons - network.n_non_learnable_neurons]) / network.n_output_neurons \
+          - alpha*torch.sum(network.spiking_history[network.hidden_neurons, -1]
+          * torch.log(1e-12 + proba_hidden / r)
+          + (1 - network.spiking_history[network.hidden_neurons, -1]) * torch.log(1e-12 + (1. - proba_hidden) / (1 - r))) / network.n_hidden_neurons
+
+    # Accumulate eligibility trace
+    for parameter in et:
+        et[parameter] += network.gradients[parameter]
+
+    return log_proba, ls, et
+
 
 
 # Distributed Synchronous SGD
@@ -34,13 +90,14 @@ def train(rank, num_nodes, net_params, train_params):
     r = train_params['r']
 
     # Create network groups for communication
-    all_nodes = dist.new_group([0, 1, 2], timeout=datetime.timedelta(0, 360000))
+    all_nodes = dist.new_group([0, 1, 2, 3], timeout=datetime.timedelta(0, 360000))
 
-    test_accuracies = []  # used to store test accuracies
+    test_accuracies = []  # used to store test accuracies
     test_loss = [[] for _ in range(num_ite)]
-    test_indices = np.hstack((np.arange(900, 1000)[:epochs_test], np.arange(1900, 2000)[:epochs_test]))
-
-
+    test_indices = np.hstack((np.arange(900, 1000)[:epochs_test]))
+    if(rank==1):
+        print(test_indices)
+    print('training at node', rank)
     for i in range(num_ite):
         # Initialize main parameters for training
         network, local_training_sequence, weights_list, S_prime, S, eligibility_trace, et_temp, learning_signal, ls_temp \
@@ -58,6 +115,7 @@ def train(rank, num_nodes, net_params, train_params):
         ### First local step
         for s in range(deltas):
             if rank != 0:
+                print('local trainig sequence',local_training_sequence)
                 # Feedforward sampling step
                 log_proba, learning_signal, eligibility_trace \
                     = feedforward_sampling(network, local_training_sequence, eligibility_trace, learning_signal, s, S_prime, alpha, r)
@@ -130,7 +188,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train probabilistic SNNs in a distributed fashion using Pytorch')
     # Mandatory arguments
     parser.add_argument('--dist_url', type=str, help='URL to specify the initialization method of the process group')
-    parser.add_argument('--node_rank', type=int, help='Rank of the current node')
+    parser.add_argument('--local_rank', type=int, help='Rank of the current node')
     parser.add_argument('--world_size', default=1, type=int, help='Total number of processes to run')
     parser.add_argument('--processes_per_node', default=1, type=int, help='Number of processes in the node')
     parser.add_argument('--dataset', help='Path to the dataset')
@@ -163,9 +221,9 @@ if __name__ == "__main__":
     parser.add_argument('--weights_magnitude', default=0.01, type=float)
 
     args = parser.parse_args()
-    print(args)
+    #print(args)
 
-    node_rank = args.node_rank + args.node_rank*(args.processes_per_node - 1)
+    node_rank = args.local_rank+ args.local_rank*(args.processes_per_node - 1)
     n_processes = args.processes_per_node
     assert (args.world_size % n_processes == 0), 'Each node must have the same number of processes'
     assert (node_rank + n_processes) <= args.world_size, 'There are more processes specified than world_size'
@@ -211,9 +269,11 @@ if __name__ == "__main__":
                            'num_ite': args.num_ite
                            }
 
+    print(network_parameters)
     processes = []
+    n_processes = 4
     for local_rank in range(n_processes):
-        p = mp.Process(target=init_processes, args=(node_rank + local_rank, args.world_size, args.backend, args.dist_url, network_parameters, training_parameters, train))
+        p = mp.Process(target=init_processes, args=(local_rank, args.world_size, args.backend, args.dist_url, network_parameters, training_parameters, train))
         p.start()
         processes.append(p)
 

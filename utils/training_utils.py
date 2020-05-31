@@ -38,7 +38,7 @@ def make_network_parameters(n_input_neurons, n_output_neurons, n_hidden_neurons,
                             tau_ff=10, tau_fb=10, mu=1.5, task='supervised'):
 
     topology = make_topology(topology_type, n_input_neurons, n_output_neurons, n_hidden_neurons, density)
-    print(topology[:, n_input_neurons:])
+    print("Here is the network topology :",topology[:, n_input_neurons:])
     network_parameters = {'n_input_neurons': n_input_neurons,
                           'n_output_neurons': n_output_neurons,
                           'n_hidden_neurons': n_hidden_neurons,
@@ -190,5 +190,5 @@ def train(network,  input_train, output_train, indices, learning_rate, kappa, de
         learning_signal, ls_temp, eligibility_trace, et_temp \
             = local_feedback_and_update(network, eligibility_trace, learning_signal, et_temp, ls_temp, learning_rate, kappa, s, deltas)
 
-        if s % int(S / 5) == 0:
+        if s % 50 == 0:
             print('Step %d out of %d' % (s, S))

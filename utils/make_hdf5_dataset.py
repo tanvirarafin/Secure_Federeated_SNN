@@ -73,27 +73,23 @@ def make_shd(path_to_train, path_to_test, path_to_hdf5, digits, window_length):
     labels = hdf5_file.create_earray(where=hdf5_file.root.train, name='label', atom=tables.BoolAtom(), shape=(0, len(digits), S_prime))
 
 
-path_to_data = r'path/to/mnist-dvs-processed'
+path_to_data = '/home/cream/Desktop/arafin_experiments/SOCC/FL-SNN/data/'
 
 # digits to consider
 digits = [i for i in range(10)]
 
 # Pixel values to consider
-max_pxl_value = 73
-min_pxl_value = 48
+max_pxl_value = 128
+min_pxl_value = 0
 
 T_max = int(2e6)  # maximum duration of an example in us
 window_length = 25000
 
-scale = 'scale4'
+scale = 'scale16'
 
-path_to_hdf5 = r'path/to/datasets/mnist-dvs/mnist_dvs_%dms_%dpxl_%d_digits.hdf5' \
+path_to_hdf5 = '/home/cream/Desktop/arafin_experiments/SOCC/FL-SNN/data/mnist_dvs_%dms_%dpxl_%d_digits.hdf5' \
                % (int(window_length / 1000), max_pxl_value - min_pxl_value + 1, len(digits))
 
 
-# make_mnist_dvs(path_to_data, path_to_hdf5, digits, max_pxl_value, min_pxl_value, T_max, window_length, scale)
-
-
-
-
+make_mnist_dvs(path_to_data, path_to_hdf5, digits, max_pxl_value, min_pxl_value, T_max, window_length, scale)
 

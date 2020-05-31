@@ -2,6 +2,7 @@ from __future__ import print_function
 import torch
 import os
 from SNN import SNNetwork
+
 from utils.training_utils import train, get_acc_and_loss
 import time
 import numpy as np
@@ -13,7 +14,7 @@ import pickle
 ''''
 Code snippet to train an SNN.
 '''
-
+#torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 if __name__ == "__main__":
     # setting the hyper parameters
@@ -21,7 +22,7 @@ if __name__ == "__main__":
 
     # Training arguments
     parser.add_argument('--dataset')
-    parser.add_argument('--num_ite', default=10, type=int, help='Number of times every experiment will be repeated')
+    parser.add_argument('--num_ite', default=1, type=int, help='Number of times every experiment will be repeated')
     parser.add_argument('--epochs', default=None, type=int, help='Number of samples to train on for each experiment')
     parser.add_argument('--epochs_test', default=None, type=int, help='Number of samples to test on')
     parser.add_argument('--lr', default=0.005, type=float, help='Learning rate')
@@ -35,15 +36,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-local_data_path = r'path/to/datasets'
+local_data_path = '/home/cream/Desktop/arafin_experiments/SOCC/FL-SNN/data/'
 save_path = os.getcwd() + r'/results'
 
-datasets = {'mnist_dvs_2': r'mnist_dvs_25ms_26pxl_2_digits.hdf5',
-            'mnist_dvs_10': r'mnist_dvs_25ms_26pxl_10_digits.hdf5',
+datasets = {
+            'mnist_dvs_10': r'mnist_dvs_25ms_26pxl_10_digits.hdf5'
             }
 
 
-dataset = local_data_path + datasets[args.dataset]
+dataset = local_data_path + datasets['mnist_dvs_10']
 
 
 input_train = torch.FloatTensor(tables.open_file(dataset).root.train.data[:])
@@ -52,6 +53,9 @@ output_train = torch.FloatTensor(tables.open_file(dataset).root.train.label[:])
 input_test = torch.FloatTensor(tables.open_file(dataset).root.test.data[:])
 output_test = torch.FloatTensor(tables.open_file(dataset).root.test.label[:])
 
+### sanity check
+print("Shape of the training dataset:", input_train.shape)
+print("Shape of the test dataset", input_test.shape)
 
 ### Network parameters
 n_input_neurons = input_train.shape[1]
@@ -83,19 +87,17 @@ indices = np.random.choice(np.arange(input_train.shape[0]), [epochs], replace=Tr
 S_prime = input_train.shape[-1]
 
 S = epochs * S_prime
+num_ite =1
 for _ in range(num_ite):
     ### Run training
     # Train it
     t0 = time.time()
-
     # Create the network
     network = SNNetwork(**utils.training_utils.make_network_parameters(n_input_neurons, n_output_neurons, n_hidden_neurons, topology_type=args.topology_type))
 
     # Train it
     train(network, input_train, output_train, indices, learning_rate, kappa, deltas, alpha, r)
     print('Number of samples trained on: %d, time: %f' % (epochs, time.time() - t0))
-
-
     ### Test accuracy
     test_indices = np.random.choice(np.arange(input_test.shape[0]), [epochs_test], replace=False)
     np.random.shuffle(test_indices)
@@ -104,6 +106,3 @@ for _ in range(num_ite):
 
     test_accs.append(acc)
     print('Final test accuracy: %f' % acc)
-
-np.save(save_path + '/acc_' + args.dataset + args.topology_type + '.npy', test_accs)
-

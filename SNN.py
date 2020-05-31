@@ -56,7 +56,7 @@ class SNNetwork(torch.nn.Module):
 
         assert (self.n_non_learnable_neurons + self.n_learnable_neurons) == self.n_neurons
 
-
+        print("At network");
         # Set train mode, to avoid spurious computations of gradients during test
         self.mode = mode
         if self.mode == 'train':
@@ -73,19 +73,24 @@ class SNNetwork(torch.nn.Module):
         assert self.n_neurons == topology.shape[-1], 'The topology of the network should be of shape [n_learnable_neurons, n_neurons]'
         topology[[i for i in range(self.n_learnable_neurons)], self.learnable_neurons] = 0
 
-
+        print(topology)
+        print('self.n_neurons are',self.n_neurons)
+        
         ### Feedforward weights
         self.n_basis_feedforward = n_basis_feedforward
         # Creating the feedforward weights according to the topology.
         # Feedforward weights are a tensor of size [n_learnable_neurons, n_neurons, n_basis_feedforward] for which the block-diagonal elements are 0,
         # and otherwise feedforward_weights[i, j, :] ~ Unif[-weights_magnitude, +weights_magnitude] if topology[i, j] = 1
-        self.feedforward_mask = torch.tensor(np.kron(topology, np.ones([self.n_basis_feedforward]))
-                                             .reshape([self.n_learnable_neurons, self.n_neurons, self.n_basis_feedforward]), dtype=torch.float)
+        ff_mask = np.kron(topology,np.ones([self.n_basis_feedforward])).reshape([self.n_learnable_neurons, self.n_neurons, self.n_basis_feedforward])
+        print("Hi",ff_mask)
+        self.feedforward_mask = torch.from_numpy(ff_mask)
+
         self.feedforward_weights = weights_magnitude * (torch.rand([self.n_learnable_neurons, self.n_neurons, self.n_basis_feedforward]) * 2 - 1) * self.feedforward_mask
+        print("FF mask", self.feedforward_mask)
         self.feedforward_filter = feedforward_filter(tau_fb, self.n_basis_feedforward, mu)
         self.tau_ff = tau_ff
 
-
+        print("ff_done")
         ### Feedback weights
         self.n_basis_feedback = n_basis_feedback
         # Creating the feedback weights.
@@ -94,6 +99,7 @@ class SNNetwork(torch.nn.Module):
         self.feedback_weights = weights_magnitude * (torch.rand([self.n_learnable_neurons, self.n_basis_feedback]) * 2 - 1)
         self.feedback_filter = feedback_filter(tau_fb, self.n_basis_feedback, mu)
         self.tau_fb = tau_fb
+        #print("taus defined")
 
 
         ### Bias
@@ -113,6 +119,7 @@ class SNNetwork(torch.nn.Module):
 
         # Path to where the weights are saved, if None they will be saved in the current directory
         self.save_path = save_path
+        #print("Model Def done")
 
 
     def forward(self, input_signal):
@@ -218,7 +225,7 @@ class SNNetwork(torch.nn.Module):
 
 
     def generate_spikes(self, spiking_history, neurons_group):
-        spiking_history[neurons_group, -1] = torch.bernoulli(torch.sigmoid(self.potential[neurons_group - self.n_non_learnable_neurons]))
+        spiking_history[neurons_group, -1] = torch.bernoulli(torch.sigmoid(self.potential[neurons_group - self.n_non_learnable_neurons]).float())
         return spiking_history
 
 

@@ -3,6 +3,7 @@ import torch
 import torch.distributed as dist
 import tables
 import math
+import os
 from SNN import SNNetwork
 import datetime
 
@@ -11,7 +12,11 @@ def init_processes(rank, world_size, backend, url, net_params, train_params, tra
     """"
     Initialize process group and launches training on the nodes
     """
-    dist.init_process_group(backend=backend, init_method=url, timeout=datetime.timedelta(0, 360000), world_size=world_size, rank=rank)
+ 
+    os.environ['MASTER_ADDR'] = '127.0.0.1'
+    os.environ['MASTER_PORT'] = '8828'
+    dist.init_process_group(backend=backend, init_method=url, rank=rank,
+            world_size=world_size)
     print('Process %d started' % rank)
     train_func(rank, world_size, net_params, train_params)
     return
@@ -66,12 +71,15 @@ def distribute_samples(nodes, rank, dataset, eta, epochs):
     """
 
     if rank == 0:
-        n_samples = tables.open_file(dataset).root.label.shape[0]  # Total number of samples
+        inpi = tables.open_file(dataset).root.train.data.shape[0]
+
+        print(inpi)
+        n_samples = tables.open_file(dataset).root.train.data.shape[0]  # Total number of samples
         n_samples_train_per_class = int(n_samples / 2 * 0.9)  # There are 2 classes and 10% of the dataset is kept for testing
 
         # Indices corresponding to each class
-        indices_0 = np.asarray(torch.max(torch.sum(torch.FloatTensor(tables.open_file(dataset).root.label[:]), dim=-1), dim=-1).indices == 0).nonzero()[0][:n_samples_train_per_class]
-        indices_1 = np.asarray(torch.max(torch.sum(torch.FloatTensor(tables.open_file(dataset).root.label[:]), dim=-1), dim=-1).indices == 1).nonzero()[0][:n_samples_train_per_class]
+        indices_0 = np.asarray(torch.max(torch.sum(torch.FloatTensor(tables.open_file(dataset).root.train.label[:]), dim=-1), dim=-1).indices == 0).nonzero()[0][:n_samples_train_per_class]
+        indices_1 = np.asarray(torch.max(torch.sum(torch.FloatTensor(tables.open_file(dataset).root.train.label[:]), dim=-1), dim=-1).indices == 1).nonzero()[0][:n_samples_train_per_class]
 
         assert len(indices_0) == len(indices_1)
         n_main_class = math.floor(epochs * eta)
@@ -95,8 +103,8 @@ def distribute_samples(nodes, rank, dataset, eta, epochs):
 
         # Save samples sent to the workers at master to evaluate train loss and accuracy later
         indices_local = torch.IntTensor(np.hstack((indices_worker_0, indices_worker_1)))
-        local_input = tables.open_file(dataset).root.data[:][indices_local]
-        local_output = tables.open_file(dataset).root.label[:][indices_local]
+        local_input = tables.open_file(dataset).root.train.data[:][indices_local]
+        local_output = tables.open_file(dataset).root.train.label[:][indices_local]
         local_teaching_signal = torch.cat((torch.FloatTensor(local_input), torch.FloatTensor(local_output)), dim=1)
 
     else:
@@ -105,8 +113,8 @@ def distribute_samples(nodes, rank, dataset, eta, epochs):
 
         assert torch.sum(indices_local) != 0
 
-        local_input = tables.open_file(dataset).root.data[:][indices_local]
-        local_output = tables.open_file(dataset).root.label[:][indices_local]
+        local_input = tables.open_file(dataset).root.train.data[:][indices_local]
+        local_output = tables.open_file(dataset).root.train.label[:][indices_local]
 
         local_teaching_signal = torch.cat((torch.FloatTensor(local_input), torch.FloatTensor(local_output)), dim=1)
 
@@ -146,10 +154,11 @@ def global_update(nodes, rank, network, weights_list):
     """
 
     for j, parameter in enumerate(network.get_parameters()):
+       
         if rank != 0:
-            dist.gather(tensor=network.get_parameters()[parameter].data, gather_list=[], dst=0, group=nodes)
+            dist.gather(tensor=network.get_parameters()[parameter].data.float(), gather_list=[], dst=0, group=nodes)
         else:
-            dist.gather(tensor=network.get_parameters()[parameter].data, gather_list=weights_list[j], dst=0, group=nodes)
+            dist.gather(tensor=network.get_parameters()[parameter].data.float(), gather_list=weights_list[j], dst=0, group=nodes)
             network.get_parameters()[parameter].data = torch.mean(torch.stack(weights_list[j][1:]), dim=0)
         dist.broadcast(network.get_parameters()[parameter], 0, group=nodes)
 

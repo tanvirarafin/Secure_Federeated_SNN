@@ -35,7 +35,7 @@ def train(rank, num_nodes, net_params, train_params):
 
     # Create network groups for communication
     all_nodes = dist.new_group([0, 1, 2], timeout=datetime.timedelta(0, 360000))
-
+    print("Training",flush=True)
     tau_list = [int((2**i)/rate) for i in range(4)]  # global update periods used for training
     test_accuracies = [[] for _ in range(len(tau_list))]  # used to store test accuracies
     test_indices = np.hstack((np.arange(900, 1000)[:epochs_test], np.arange(1900, 2000)[:epochs_test]))
@@ -60,6 +60,7 @@ def train(rank, num_nodes, net_params, train_params):
                         = feedforward_sampling_accum_gradients(network, local_training_sequence, eligibility_trace, learning_signal, gradients_accum, s, S_prime, alpha, r)
 
             if rank != 0:
+                print('rank 0')
                 # First local update
                 for parameter in eligibility_trace:
                     eligibility_trace[parameter][network.hidden_neurons - network.n_non_learnable_neurons] *= learning_signal
@@ -71,6 +72,7 @@ def train(rank, num_nodes, net_params, train_params):
                 gradients_accum = torch.zeros(network.feedforward_weights.shape, dtype=torch.float)
 
                 dist.barrier(all_nodes)
+                print('Hi')
 
 
             ### Remainder of the steps
@@ -117,7 +119,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train probabilistic SNNs in a distributed fashion using Pytorch')
     # Mandatory arguments
     parser.add_argument('--dist_url', type=str, help='URL to specify the initialization method of the process group')
-    parser.add_argument('--node_rank', type=int, help='Rank of the current node')
     parser.add_argument('--world_size', default=1, type=int, help='Total number of processes to run')
     parser.add_argument('--processes_per_node', default=1, type=int, help='Number of processes in the node')
     parser.add_argument('--dataset', help='Path to the dataset')
@@ -148,11 +149,11 @@ if __name__ == "__main__":
     parser.add_argument('--rate', default=0.25, type=float, help='Fixed communication rate')
     parser.add_argument('--r', default=0.3, type=float, help='Desired hidden neurons spiking rate')
     parser.add_argument('--weights_magnitude', default=0.01, type=float)
-
+    parser.add_argument('--local_rank', default=0, type=int)
     args = parser.parse_args()
     print(args)
 
-    node_rank = args.node_rank + args.node_rank*(args.processes_per_node - 1)
+    node_rank = args.local_rank + args.local_rank*(args.processes_per_node - 1)
     n_processes = args.processes_per_node
     assert (args.world_size % n_processes == 0), 'Each node must have the same number of processes'
     assert (node_rank + n_processes) <= args.world_size, 'There are more processes specified than world_size'
